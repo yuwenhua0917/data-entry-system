@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1668dc">
+<title>内外径检测数据录入</title>
+<style>
+  :root{
+    --primary:#1668dc;
+    --primary-dark:#0f4fb5;
+    --ok:#16a34a;
+    --ng:#e5484d;
+    --ng2:#f08c00;
+    --bg:#f3f5f8;
+    --card:#ffffff;
+    --text:#1f2937;
+    --muted:#6b7280;
+    --border:#e5e7eb;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);
+    padding-bottom:120px;font-size:15px;
+  }
+  .topbar{
+    background:linear-gradient(135deg,#1668dc,#1e4bb8);
+    color:#fff;padding:16px 16px 42px;position:relative;
+    border-radius:0 0 26px 26px;
+  }
+  .topbar h1{margin:0;font-size:19px;font-weight:600;letter-spacing:.5px;}
+  .topbar p{margin:6px 0 0;font-size:13px;opacity:.9;}
+  .badge{
+    position:absolute;right:16px;top:18px;background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.35);padding:4px 10px;border-radius:999px;font-size:12px;
+  }
+  .card{
+    background:var(--card);border-radius:16px;padding:16px;
+    box-shadow:0 1px 4px rgba(0,0,0,.06);margin:14px 12px;
+  }
+  .card-title{font-size:14px;font-weight:600;color:#374151;margin:0 0 12px;display:flex;align-items:center;gap:6px;}
+  .scan-box{
+    background:#0b0d12;border-radius:14px;min-height:230px;position:relative;overflow:hidden;
+  }
+  .scan-box video{width:100%;height:100%;object-fit:cover;display:block;}
+  .scan-placeholder{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#8b93a3;
+  }
+  .scan-placeholder .icon{font-size:44px;margin-bottom:8px;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border:none;border-radius:12px;padding:13px 18px;font-size:15px;font-weight:600;cursor:pointer;
+    transition:.15s;width:100%;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-primary:active{background:var(--primary-dark);}
+  .btn-ghost{background:#eef2ff;color:var(--primary);border:1px solid #d6e0ff;}
+  .btn-ok{background:var(--ok);color:#fff;font-size:17px;padding:16px;}
+  .row{display:flex;gap:10px;}
+  .row .btn{flex:1;}
+  .device-chip{
+    display:flex;align-items:center;gap:10px;background:#f0f6ff;border:1px solid #d6e6ff;
+    border-radius:12px;padding:12px;
+  }
+  .device-chip .code{font-weight:700;font-size:16px;color:var(--primary);}
+  .device-chip .name{color:#4b5563;font-size:14px;}
+  .device-chip .tag{background:var(--ok);color:#fff;font-size:11px;padding:2px 8px;border-radius:999px;margin-left:auto;white-space:nowrap;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:7px;}
+  .field label .req{color:#e5484d;}
+  .input{
+    width:100%;border:1.5px solid var(--border);border-radius:12px;padding:13px 14px;
+    font-size:18px;color:var(--text);outline:none;background:#fafbfc;transition:.15s;
+  }
+  .input:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(22,104,220,.12);}
+  .input.num{font-size:22px;font-weight:600;text-align:left;}
+  .input.big{font-size:22px;font-weight:600;}
+  select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  .color-ng{color:var(--ng);}
+  .color-ng2{color:var(--ng2);}
+  .submit-bar{
+    position:fixed;left:0;right:0;bottom:0;background:#fff;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+    box-shadow:0 -2px 12px rgba(0,0,0,.08);z-index:50;
+  }
+  .recent-item{
+    display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px;
+  }
+  .recent-item:last-child{border-bottom:none;}
+  .recent-item .t{color:var(--muted);}
+  .recent-item .v{font-weight:600;}
+  .recent-item .v .ngc{color:var(--ng);}
+  .empty{color:var(--muted);text-align:center;padding:18px 0;font-size:13px;}
+  .toast{
+    position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(17,24,39,.92);color:#fff;
+    padding:12px 20px;border-radius:12px;font-size:14px;z-index:100;opacity:0;pointer-events:none;transition:opacity .25s;
+    max-width:86vw;text-align:center;
+  }
+  .toast.show{opacity:1;}
+  .toast.ok{background:rgba(22,163,74,.94);}
+  .toast.err{background:rgba(229,72,77,.95);}
+  .hidden{display:none!important;}
+  .link{color:var(--primary);font-size:12px;text-decoration:underline;}
+</style>
+</head>
+<body>
+  <div class="toast" id="toast"></div>
+
+  <div class="topbar">
+    <span class="badge">数据录入</span>
+    <h1>内外径检测数据录入</h1>
+    <p>扫描设备二维码 → 填写检测数据 → 提交</p>
+  </div>
+
+  <!-- 扫码区 -->
+  <div class="card">
+    <div class="card-title">① 扫描设备二维码</div>
+    <div class="scan-box" id="scan-box">
+      <div id="qr-reader" style="width:100%;height:100%;"></div>
+      <div class="scan-placeholder" id="scan-placeholder">
+        <div class="icon">📷</div>
+        <div>点击下方按钮开始扫码</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <button class="btn btn-primary" id="btn-scan">📷 扫码</button>
+      <button class="btn btn-ghost" id="btn-manual">⌨ 手动输入</button>
+    </div>
+    <div class="hint" id="scan-hint">提示：当前为 HTTPS 环境，可直接点击"扫码"调用摄像头；如摄像头不可用，可改用"手动输入"设备编码。<br><span id="ssl-hint" style="color:#b45309;"></span></div>
+  </div>
+
+  <!-- 设备信息 -->
+  <div class="card hidden" id="device-card">
+    <div class="card-title">② 当前设备</div>
+    <div class="device-chip">
+      <div>
+        <div class="code" id="d-code">--</div>
+        <div class="name" id="d-name">未登记设备</div>
+      </div>
+      <span class="tag">已选中</span>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn btn-ghost" id="btn-rescan">重新扫码</button>
+    </div>
+  </div>
+
+  <!-- 数据填写 -->
+  <div class="card hidden" id="form-card">
+    <div class="card-title">③ 填写检测数据</div>
+
+    <div class="field">
+      <label>生产数量 <span class="req">*</span>（当日生产总数）</label>
+      <input type="number" inputmode="numeric" min="0" step="1" class="input num" id="f-production" placeholder="0">
+    </div>
+
+    <div class="field">
+      <label>NG品数据 <span class="req">*</span>（不良品总数）</label>
+      <input type="number" inputmode="numeric" min="0" step="1" class="input num" id="f-ng" placeholder="0" style="color:#e5484d;">
+    </div>
+
+    <div class="grid2">
+      <div class="field" style="margin-bottom:0;">
+        <label class="color-ng2">内径不良数 <span class="req">*</span></label>
+        <input type="number" inputmode="numeric" min="0" step="1" class="input num" id="f-ngInner" placeholder="0" style="color:#f08c00;">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label class="color-ng2">外径不良数 <span class="req">*</span></label>
+        <input type="number" inputmode="numeric" min="0" step="1" class="input num" id="f-ngOuter" placeholder="0" style="color:#f08c00;">
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:12px;">
+      <div class="field" style="margin-bottom:0;">
+        <label>班次</label>
+        <select class="input" id="f-shift" style="font-size:15px;">
+          <option value="白班">白班</option>
+          <option value="夜班">夜班</option>
+          <option value="早班">早班</option>
+          <option value="中班">中班</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>检验员</label>
+        <input type="text" class="input" id="f-operator" placeholder="姓名（选填）" style="font-size:15px;">
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:12px;">
+      <label>备注</label>
+      <input type="text" class="input" id="f-remark" placeholder="备注（选填）" style="font-size:14px;">
+    </div>
+  </div>
+
+  <!-- 最近记录 -->
+  <div class="card">
+    <div class="card-title">最近录入</div>
+    <div id="recent-list"><div class="empty">暂无记录</div></div>
+  </div>
+
+  <!-- 提交按钮 -->
+  <div class="submit-bar hidden" id="submit-bar">
+    <button class="btn btn-ok" id="btn-submit">✓ 提交数据</button>
+  </div>
+
+<script src="/lib/html5-qrcode.min.js"></script>
+<script>
+(function(){
+  var state = { deviceId: null, deviceName: null, scanning: false, scanner: null };
+
+  var $ = function(id){ return document.getElementById(id); };
+  function toast(msg, type){
+    var t = $('toast'); t.textContent = msg;
+    t.className = 'toast show ' + (type || '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function(){ t.className = 'toast ' + (type || ''); }, 2500);
+  }
+
+  // HTTPS：区分"公网可信证书"和"自签证书"两种环境，自签时页面提示首次信任操作
+  if (location.protocol === 'https:') {
+    try {
+      var isLocal = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|127\.|localhost|\[::1\])/i.test(location.hostname);
+      if (isLocal) {
+        $('ssl-hint').textContent = '当前为现场 HTTPS（固定地址，打印贴现场用）。如浏览器提示证书不受信任，请"点高级 / 详细信息 / 仍要继续访问"，只需一次。';
+      }
+    } catch (e) {}
+  }
+
+  // 更新设备卡片
+  function setDevice(id, name){
+    state.deviceId = id; state.deviceName = name;
+    $('d-code').textContent = id;
+    $('d-name').textContent = name || '未登记设备（将自动登记）';
+    $('device-card').classList.remove('hidden');
+    $('form-card').classList.remove('hidden');
+    $('submit-bar').classList.remove('hidden');
+    setTimeout(function(){ $('f-production').focus(); }, 100);
+  }
+
+  function stopScanner(){
+    if(state.scanner){
+      try{ state.scanner.stop().then(function(){ try{state.scanner.clear();}catch(e){} }).catch(function(){}); }catch(e){}
+      state.scanner = null;
+    }
+    state.scanning = false;
+    $('btn-scan').textContent = '📷 扫码';
+  }
+
+  // 开始扫码
+  function startScan(){
+    if(state.scanning){ stopScanner(); return; }
+    var box = $('qr-reader');
+    box.innerHTML = ''; // 清除残留
+    $('scan-placeholder').classList.add('hidden');
+    try {
+      state.scanner = new Html5Qrcode('qr-reader');
+    } catch(e){
+      toast('扫描组件加载失败，请使用手动输入', 'err');
+      return;
+    }
+    state.scanning = true;
+    $('btn-scan').textContent = '■ 停止扫码';
+    state.scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: function(vw, vh){ var s = Math.floor(Math.min(vw, vh) * 0.72); return { width: s, height: s }; } },
+      function(decodedText){
+        stopScanner();
+        var id = (decodedText || '').trim();
+        if(!id){ toast('二维码内容为空', 'err'); return; }
+        // 支持形如 {"deviceId":"xxx"} 或纯文本
+        try{
+          var j = JSON.parse(id);
+          id = j.deviceId || j.id || j.code || id;
+        }catch(e){}
+        toast('已识别设备：' + id, 'ok');
+        setDevice(id, '');
+        fetch('/api/devices').then(function(r){return r.json();}).then(function(list){
+          var found = list.find(function(d){return d.id === id;});
+          if(found){ state.deviceName = found.name; $('d-name').textContent = found.name; }
+        }).catch(function(){});
+      },
+      function(err){
+        // 持续扫码中，忽略中间错误；如为致命错误会由 catch 捕获
+      }
+    ).catch(function(err){
+      state.scanning = false; state.scanner = null;
+      $('btn-scan').textContent = '📷 扫码';
+      $('scan-placeholder').classList.remove('hidden');
+      var msg = (err && (err.message || err)) || '';
+      if(String(msg).indexOf('NotAllowedError') >= 0){
+        toast('摄像头被拒绝，请允许权限或手动输入', 'err');
+      } else if(String(msg).indexOf('NotReadableError') >= 0){
+        toast('摄像头被占用或不可用，请手动输入', 'err');
+      } else if(String(msg).indexOf('NotFoundError') >= 0){
+        toast('未检测到摄像头，请手动输入', 'err');
+      } else {
+        toast('无法启动摄像头，请手动输入或改用电脑端“手机访问”里的公网 HTTPS 地址', 'err');
+        if(location.protocol === 'http:'){
+          $('scan-hint').textContent = '⚠ 当前为 HTTP 环境，浏览器禁止调用摄像头。请到电脑端“手机访问”页扫描公网 HTTPS 二维码进入本页，即可使用摄像头扫码；或直接点“手动输入”设备编码。';
+        }
+      }
+    });
+  }
+
+  $('btn-scan').addEventListener('click', startScan);
+
+  $('btn-manual').addEventListener('click', function(){
+    var id = prompt('请输入设备编码（二维码上印的编码）：', '');
+    if(id && id.trim()){ setDevice(id.trim(), ''); fetch('/api/devices').then(function(r){return r.json();}).then(function(list){ var f=list.find(function(d){return d.id===id.trim();}); if(f){state.deviceName=f.name; $('d-name').textContent=f.name;} }).catch(function(){}); }
+  });
+
+  $('btn-rescan').addEventListener('click', function(){ startScan(); });
+
+  // 提交
+  $('btn-submit').addEventListener('click', function(){
+    if(!state.deviceId){ toast('请先扫描或输入设备编码', 'err'); return; }
+    var prod = $('f-production').value;
+    var ng = $('f-ng').value;
+    var inner = $('f-ngInner').value;
+    var outer = $('f-ngOuter').value;
+    if(prod === '' || prod === null){ toast('请填写生产数量', 'err'); $('f-production').focus(); return; }
+    var payload = {
+      deviceId: state.deviceId,
+      production: prod === '' ? 0 : Number(prod),
+      ng: ng === '' ? 0 : Number(ng),
+      ngInner: inner === '' ? 0 : Number(inner),
+      ngOuter: outer === '' ? 0 : Number(outer),
+      shift: $('f-shift').value,
+      operator: $('f-operator').value.trim(),
+      remark: $('f-remark').value.trim(),
+    };
+    if(isNaN(payload.production)||isNaN(payload.ng)||isNaN(payload.ngInner)||isNaN(payload.ngOuter)){
+      toast('请输入有效的数字', 'err'); return;
+    }
+    fetch('/api/records', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(function(r){return r.json();}).then(function(res){
+      if(!res.ok){ toast(res.error || '提交失败', 'err'); return; }
+      toast('提交成功', 'ok');
+      // 保留设备，清空数字字段，便于连续录入
+      ['f-production','f-ng','f-ngInner','f-ngOuter','f-remark'].forEach(function(id){ $(id).value = ''; });
+      $('f-production').focus();
+      loadRecent();
+    }).catch(function(){ toast('网络错误，提交失败', 'err'); });
+  });
+
+  function fmtNum(n){ return n == null ? '0' : Number(n).toLocaleString(); }
+
+  function loadRecent(){
+    fetch('/api/records').then(function(r){return r.json();}).then(function(list){
+      var box = $('recent-list');
+      if(!list || !list.length){ box.innerHTML = '<div class="empty">暂无记录</div>'; return; }
+      var html = '';
+      list.slice(0,8).forEach(function(r){
+        html += '<div class="recent-item">' +
+          '<div><div style="font-weight:600;">' + (r.deviceName || r.deviceId) + '</div>' +
+          '<div class="t">' + r.createdAt + (r.operator ? ' · ' + r.operator : '') + '</div></div>' +
+          '<div class="v">生产 ' + fmtNum(r.production) + ' · NG <span class="ngc">' + fmtNum(r.ng) + '</span><br>' +
+          '<span style="color:#f08c00;">内 ' + fmtNum(r.ngInner) + '</span> / ' +
+          '<span style="color:#f08c00;">外 ' + fmtNum(r.ngOuter) + '</span></div>' +
+        '</div>';
+      });
+      box.innerHTML = html;
+    }).catch(function(){});
+  }
+
+  loadRecent();
+})();
+</script>
+</body>
+</html>
