@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>内外径检测数据录入系统 - 管理端</title>
+<style>
+  :root{
+    --primary:#1668dc;--primary-dark:#0f4fb5;--ok:#16a34a;--ng:#e5484d;--ng2:#f08c00;
+    --bg:#f0f2f5;--card:#fff;--text:#1f2937;--muted:#6b7280;--border:#e5e7eb;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+  .header{background:linear-gradient(135deg,#1668dc,#1e4bb8);color:#fff;padding:0 24px;display:flex;align-items:center;height:56px;box-shadow:0 1px 4px rgba(0,0,0,.15);position:sticky;top:0;z-index:40;}
+  .header .title{font-size:17px;font-weight:600;letter-spacing:.5px;}
+  .header .badge{margin-left:14px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);padding:3px 10px;border-radius:999px;font-size:12px;}
+  .header .spacer{flex:1;}
+  .header .refresh{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);color:#fff;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px;}
+  .header .refresh:hover{background:rgba(255,255,255,.24);}
+  .nav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:4px;position:sticky;top:56px;z-index:39;}
+  .nav button{border:none;background:none;padding:14px 18px;font-size:14px;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;font-weight:500;transition:.15s;}
+  .nav button:hover{color:var(--primary);}
+  .nav button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600;}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px 24px 60px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:16px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:12px;color:var(--muted);font-weight:600;}
+  .inp{border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;outline:none;background:#fff;min-width:150px;}
+  .inp:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(22,104,220,.1);}
+  .btn{border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-ok{background:var(--ok);color:#fff;}
+  .btn-ghost{background:#eef2ff;color:var(--primary);border:1px solid #d6e0ff;}
+  .btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fecaca;}
+  .btn-sm{padding:6px 12px;font-size:13px;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;}
+  .kpi{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:4px solid var(--primary);}
+  .kpi .label{font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .kpi .value{font-size:26px;font-weight:700;line-height:1.1;}
+  .kpi .sub{font-size:12px;color:var(--muted);margin-top:4px;}
+  .kpi.k-ng{border-left-color:var(--ng);}
+  .kpi.k-ng .value{color:var(--ng);}
+  .kpi.k-in{border-left-color:var(--ng2);}
+  .kpi.k-in .value{color:var(--ng2);}
+  .kpi.k-out{border-left-color:var(--ng2);}
+  .kpi.k-out .value{color:var(--ng2);}
+  .kpi.k-ok{border-left-color:var(--ok);}
+  .kpi.k-ok .value{color:var(--ok);}
+  .card{background:var(--card);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:20px;margin-bottom:20px;}
+  .card h3{margin:0 0 14px;font-size:15px;font-weight:600;color:#374151;}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #f0f0f0;white-space:nowrap;}
+  th{background:#fafbfc;color:#6b7280;font-weight:600;font-size:12px;position:sticky;top:0;}
+  tbody tr:hover{background:#f8fafc;}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .r-ng{color:var(--ng);font-weight:600;}
+  .r-in{color:var(--ng2);}
+  .r-out{color:var(--ng2);}
+  .rate{color:var(--ng);font-weight:600;}
+  .empty{color:var(--muted);text-align:center;padding:24px 0;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;background:#eef2ff;color:var(--primary);}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:14px;}
+  .modal{position:fixed;inset:0;background:rgba(17,24,39,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .modal.show{display:flex;}
+  .modal-card{background:#fff;border-radius:14px;padding:24px;max-width:440px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);}
+  .modal-card h3{margin:0 0 16px;font-size:16px;}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+  .label-box{background:#fff;border:2px dashed #cbd5e1;border-radius:12px;padding:20px;text-align:center;}
+  .label-box .lb-name{font-size:18px;font-weight:700;margin-bottom:4px;}
+  .label-box .lb-line{color:var(--muted);font-size:13px;margin-bottom:10px;}
+  .label-box .lb-code{font-size:20px;font-weight:700;color:var(--primary);margin-top:8px;letter-spacing:1px;}
+  .label-box .lb-qr{display:inline-block;}
+  .url-box{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-family:Consolas,monospace;font-size:15px;color:#0f4fb5;word-break:break-all;margin-bottom:8px;}
+  .muted{color:var(--muted);}
+  .note{background:#fff8e6;border:1px solid #ffe08a;border-radius:10px;padding:12px 14px;font-size:13px;color:#8a6d3b;margin-top:14px;line-height:1.6;}
+  .flex{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+  .link-qr{display:inline-block;background:#fff;padding:10px;border:1px solid var(--border);border-radius:10px;}
+  #print-area{display:none;}
+  @media print{
+    body > *{display:none !important;}
+    #print-area{display:block !important;padding:10mm;}
+    #print-area .label-box{border:1px solid #000;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">内外径检测数据录入系统</div>
+    <span class="badge">管理端</span>
+    <div class="spacer"></div>
+    <button class="refresh" id="btn-refresh">⟳ 刷新数据</button>
+  </div>
+
+  <div class="nav">
+    <button class="active" data-tab="dashboard">数据看板</button>
+    <button data-tab="records">数据记录</button>
+    <button data-tab="devices">设备管理</button>
+    <button data-tab="mobile">手机访问</button>
+  </div>
+
+  <div class="wrap">
+    <!-- 数据看板 -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="toolbar">
+        <div class="field"><label>开始日期</label><input type="date" class="inp" id="d-from"></div>
+        <div class="field"><label>结束日期</label><input type="date" class="inp" id="d-to"></div>
+        <div class="field"><label>设备</label>
+          <select class="inp" id="d-device"><option value="">全部设备</option></select>
+        </div>
+        <button class="btn btn-ghost" id="btn-clear-filter">清除筛选</button>
+      </div>
+      <div class="cards" id="kpi-cards"></div>
+      <div class="card">
+        <h3>按设备汇总</h3>
+        <div class="table-wrap"><table id="tbl-device-summary"></table></div>
+      </div>
+      <div class="card">
+        <h3>按日期汇总</h3>
+        <div class="table-wrap"><table id="tbl-date-summary"></table></div>
+      </div>
+    </div>
+
+    <!-- 数据记录 -->
+    <div class="panel" id="panel-records">
+      <div class="toolbar">
+        <div class="field"><label>设备</label>
+          <select class="inp" id="r-device"><option value="">全部设备</option></select>
+        </div>
+        <div class="field"><label>开始日期</label><input type="date" class="inp" id="r-from"></div>
+        <div class="field"><label>结束日期</label><input type="date" class="inp" id="r-to"></div>
+        <button class="btn btn-primary btn-sm" id="btn-export">⬇ 导出 CSV / Excel</button>
+      </div>
+      <div class="card" style="padding:0;">
+        <div class="table-wrap" style="max-height:70vh;overflow-y:auto;"><table id="tbl-records"></table></div>
+      </div>
+    </div>
+
+    <!-- 设备管理 -->
+    <div class="panel" id="panel-devices">
+      <div class="card">
+        <h3>新增/编辑设备</h3>
+        <div class="form-grid">
+          <div class="field"><label>设备编码（贴二维码内容）</label><input class="inp" id="dev-id" placeholder="如 JC-001"></div>
+          <div class="field"><label>设备名称</label><input class="inp" id="dev-name" placeholder="如 内外径检测机 1#"></div>
+          <div class="field"><label>产线/位置（选填）</label><input class="inp" id="dev-line" placeholder="如 一号车间"></div>
+        </div>
+        <div class="flex">
+          <button class="btn btn-primary" id="btn-save-device">保存设备</button>
+          <button class="btn btn-ghost" id="btn-reset-device">清空</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;">
+        <div class="table-wrap"><table id="tbl-devices"></table></div>
+      </div>
+    </div>
+
+    <!-- 手机访问 -->
+    <div class="panel" id="panel-mobile">
+      <div class="card">
+        <div id="access-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 标签打印预览弹窗 -->
+  <div class="modal" id="label-modal">
+    <div class="modal-card">
+      <h3>设备二维码标签</h3>
+      <div class="label-box" id="label-preview"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btn-label-close">关闭</button>
+        <button class="btn btn-primary" id="btn-label-print">🖨 打印标签</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 打印专用区域 -->
+  <div id="print-area"></div>
+
+<script src="/lib/qrcode.min.js"></script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var nf = function(n){ return (n==null?'0':Number(n).toLocaleString()); };
+  var currentDevice = null; // 用于标签
+
+  function api(path, opts){
+    opts = opts || {};
+    return fetch(path, opts).then(function(r){
+      return r.json().catch(function(){ return {ok:false}; });
+    });
+  }
+
+  // ---------- Tab 切换 ----------
+  document.querySelectorAll('.nav button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.nav button').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+      $('panel-' + btn.dataset.tab).classList.add('active');
+      refreshAll();
+    });
+  });
+
+  // ---------- 设备下拉框 ----------
+  function fillDeviceSelects(){
+    return api('/api/devices').then(function(list){
+      var html = '<option value="">全部设备</option>';
+      list.forEach(function(d){ html += '<option value="'+d.id+'">'+ (d.name || d.id) +' （'+d.id+'）</option>'; });
+      $('d-device').innerHTML = html;
+      $('r-device').innerHTML = html;
+      return list;
+    });
+  }
+
+  // ---------- 看板 ----------
+  function loadDashboard(){
+    var q = [];
+    var from = $('d-from').value, to = $('d-to').value, dev = $('d-device').value;
+    if(from) q.push('from='+from); if(to) q.push('to='+to);
+    api('/api/summary' + (q.length?'?'+q.join('&'):'')).then(function(s){
+      var t = s.total || {};
+      $('kpi-cards').innerHTML =
+        kpi('累计生产', nf(t.production), '共 '+nf(t.count)+' 条记录', '') +
+        kpi('NG 总数', nf(t.ng), '不良率 '+(t.ngRate||0)+'%', 'k-ng') +
+        kpi('内径不良', nf(t.ngInner), '内径不良数', 'k-in') +
+        kpi('外径不良', nf(t.ngOuter), '外径不良数', 'k-out');
+
+      // 按设备
+      var ds = (s.byDevice||[]).filter(function(d){ return !dev || d.deviceId===dev; });
+      var h = '<thead><tr><th>设备编码</th><th>设备名称</th><th class="num">生产数量</th><th class="num">NG</th><th class="num">内径不良</th><th class="num">外径不良</th><th class="num">不良率</th><th class="num">记录数</th></tr></thead><tbody>';
+      if(!ds.length){ h += '<tr><td colspan="8" class="empty">暂无数据</td></tr>'; }
+      ds.forEach(function(d){
+        h += '<tr><td class="tag">'+d.deviceId+'</td><td>'+d.deviceName+'</td>' +
+             '<td class="num">'+nf(d.production)+'</td><td class="num r-ng">'+nf(d.ng)+'</td>' +
+             '<td class="num r-in">'+nf(d.ngInner)+'</td><td class="num r-out">'+nf(d.ngOuter)+'</td>' +
+             '<td class="num rate">'+d.ngRate+'%</td><td class="num">'+d.count+'</td></tr>';
+      });
+      h += '</tbody>';
+      $('tbl-device-summary').innerHTML = h;
+
+      // 按日期
+      var dd = (s.byDate||[]).slice().reverse();
+      var h2 = '<thead><tr><th>日期</th><th class="num">生产数量</th><th class="num">NG</th><th class="num">内径不良</th><th class="num">外径不良</th><th class="num">记录数</th></tr></thead><tbody>';
+      if(!dd.length){ h2 += '<tr><td colspan="6" class="empty">暂无数据</td></tr>'; }
+      dd.forEach(function(d){
+        h2 += '<tr><td>'+d.date+'</td><td class="num">'+nf(d.production)+'</td>' +
+              '<td class="num r-ng">'+nf(d.ng)+'</td><td class="num r-in">'+nf(d.ngInner)+'</td>' +
+              '<td class="num r-out">'+nf(d.ngOuter)+'</td><td class="num">'+d.count+'</td></tr>';
+      });
+      h2 += '</tbody>';
+      $('tbl-date-summary').innerHTML = h2;
+    });
+  }
+  function kpi(label, value, sub, cls){
+    return '<div class="kpi '+cls+'"><div class="label">'+label+'</div><div class="value">'+value+'</div><div class="sub">'+sub+'</div></div>';
+  }
+
+  // ---------- 记录 ----------
+  function loadRecords(){
+    var q = [];
+    var dev = $('r-device').value, from = $('r-from').value, to = $('r-to').value;
+    if(dev) q.push('deviceId='+encodeURIComponent(dev));
+    if(from) q.push('from='+from); if(to) q.push('to='+to);
+    api('/api/records' + (q.length?'?'+q.join('&'):'')).then(function(list){
+      var h = '<thead><tr><th>时间</th><th>设备编码</th><th>设备名称</th><th class="num">生产</th><th class="num">NG</th><th class="num">内径</th><th class="num">外径</th><th>班次</th><th>检验员</th><th>备注</th><th>操作</th></tr></thead><tbody>';
+      if(!list.length){ h += '<tr><td colspan="11" class="empty">暂无记录</td></tr>'; }
+      list.forEach(function(r){
+        h += '<tr><td>'+r.createdAt+'</td><td class="tag">'+r.deviceId+'</td><td>'+(r.deviceName||'')+'</td>' +
+             '<td class="num">'+nf(r.production)+'</td><td class="num r-ng">'+nf(r.ng)+'</td>' +
+             '<td class="num r-in">'+nf(r.ngInner)+'</td><td class="num r-out">'+nf(r.ngOuter)+'</td>' +
+             '<td>'+(r.shift||'')+'</td><td>'+(r.operator||'')+'</td><td>'+(r.remark||'')+'</td>' +
+             '<td><button class="btn btn-danger btn-sm" data-del="'+r.id+'">删除</button></td></tr>';
+      });
+      h += '</tbody>';
+      $('tbl-records').innerHTML = h;
+      document.querySelectorAll('[data-del]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if(!confirm('确定删除这条记录吗？')) return;
+          api('/api/records?id='+btn.dataset.del, {method:'DELETE'}).then(function(){
+            loadRecords(); loadDashboard();
+          });
+        });
+      });
+    });
+  }
+
+  // ---------- 设备 ----------
+  function loadDevices(){
+    return api('/api/devices').then(function(list){
+      var h = '<thead><tr><th>设备编码</th><th>设备名称</th><th>产线/位置</th><th>登记时间</th><th>操作</th></tr></thead><tbody>';
+      if(!list.length){ h += '<tr><td colspan="5" class="empty">暂无设备，请先添加</td></tr>'; }
+      list.forEach(function(d){
+        h += '<tr><td class="tag">'+d.id+'</td><td>'+(d.name||'')+'</td><td>'+(d.line||'')+'</td><td>'+(d.createdAt||'')+'</td>' +
+             '<td><div class="flex" style="gap:6px;">' +
+             '<button class="btn btn-ghost btn-sm" data-edit="'+d.id+'">编辑</button>' +
+             '<button class="btn btn-primary btn-sm" data-label="'+d.id+'">二维码标签</button>' +
+             '<button class="btn btn-danger btn-sm" data-rm="'+d.id+'">删除</button></div></td></tr>';
+      });
+      h += '</tbody>';
+      $('tbl-devices').innerHTML = h;
+
+      document.querySelectorAll('[data-edit]').forEach(function(b){ b.addEventListener('click', function(){ editDevice(b.dataset.edit); }); });
+      document.querySelectorAll('[data-label]').forEach(function(b){ b.addEventListener('click', function(){ showLabel(b.dataset.label); }); });
+      document.querySelectorAll('[data-rm]').forEach(function(b){ b.addEventListener('click', function(){
+        if(!confirm('确定删除设备「'+b.dataset.rm+'」吗？\n（不会删除已录入的数据记录）')) return;
+        api('/api/devices?id='+encodeURIComponent(b.dataset.rm), {method:'DELETE'}).then(function(){ loadDevices(); fillDeviceSelects(); });
+      }); });
+    });
+  }
+
+  function editDevice(id){
+    api('/api/devices').then(function(list){
+      var d = list.find(function(x){ return x.id===id; });
+      if(!d) return;
+      $('dev-id').value = d.id; $('dev-name').value = d.name||''; $('dev-line').value = d.line||'';
+    });
+  }
+
+  // ---------- 标签 ----------
+  function showLabel(id){
+    api('/api/devices').then(function(list){
+      var d = list.find(function(x){ return x.id===id; });
+      if(!d) return;
+      currentDevice = d;
+      var box = $('label-preview');
+      box.innerHTML = '<div class="lb-name">'+(d.name||d.id)+'</div>' +
+        (d.line ? '<div class="lb-line">'+d.line+'</div>' : '') +
+        '<div class="lb-qr" id="preview-qr"></div>' +
+        '<div class="lb-code">'+d.id+'</div>' +
+        '<div style="font-size:11px;color:#999;margin-top:4px;">扫码录入检测数据</div>';
+      new QRCode($('preview-qr'), { text: d.id, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+      $('label-modal').classList.add('show');
+    });
+  }
+
+  function printLabel(device){
+    var area = $('print-area');
+    area.innerHTML = '<div class="label-box">' +
+      '<div class="lb-name">'+(device.name||device.id)+'</div>' +
+      (device.line ? '<div class="lb-line">'+device.line+'</div>' : '') +
+      '<div id="print-qr" style="display:inline-block;"></div>' +
+      '<div class="lb-code">'+device.id+'</div>' +
+      '<div style="font-size:11px;color:#000;margin-top:4px;">扫码录入检测数据</div></div>';
+    new QRCode($('print-qr'), { text: device.id, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+    setTimeout(function(){ window.print(); }, 120);
+  }
+
+  // ---------- 手机访问方式 ----------
+  function qrHtml(targetId, url, size){
+    size = size || 200;
+    setTimeout(function(){
+      var el = document.getElementById(targetId);
+      if(!el) return;
+      el.innerHTML = '';
+      try { new QRCode(el, { text: url, width: size, height: size, correctLevel: QRCode.CorrectLevel.Q }); } catch(e){}
+    }, 30);
+    return '<div class="link-qr" id="' + targetId + '"></div>';
+  }
+
+  function loadAccess(){
+    api('/api/access').then(function(r){
+      var box = $('access-content');
+      if(!r.ok || !r.data){
+        box.innerHTML = '<div class="note">加载访问方式失败：' + (r.error || '未知错误') + '</div>';
+        return;
+      }
+      var d = r.data;
+      if(d.isCloud && d.longTerm){
+        // 云端模式：固定 URL，永久不变
+        box.innerHTML =
+          '<h3 style="color:#16a34a;">永久固定二维码（打印贴现场）</h3>' +
+          '<p class="muted">此二维码地址<b>永远不变</b>。手机用 <b>4G / 5G / WiFi</b> 等任意网络扫码即可录入，<b>无需电脑开机</b>（数据在云端）。</p>' +
+          '<div class="url-box">' + d.longTerm + '</div>' +
+          '<div class="flex" style="align-items:center;gap:16px;margin-top:14px;">' +
+            qrHtml('cloud-qr', d.longTerm, 200) +
+            '<div class="muted" style="font-size:13px;max-width:280px;">' +
+              '手机扫一扫左侧二维码，直接进入录入页面；<br>' +
+              '可截图或打印此二维码贴在现场设备旁；<br>' +
+              'HTTPS 安全环境，支持摄像头扫码录入设备编码。<br>' +
+            '</div>' +
+          '</div>';
+        return;
+      }
+
+      // 本地模式
+      var t = d.tunnels || {};
+      var cf = t.cloudflare, p = t.primary, s = t.secondary;
+      if(!cf && !p && !s){
+        var html = '<h3>正在连接公网隧道...</h3>' +
+          '<p class="muted">首次启动需要下载 cloudflared 并连接 Cloudflare，请耐心等待 30~90 秒。本页面会自动刷新。</p>';
+        if(d.tunnelError){ html += '<div class="note" style="background:#fef3c7;">' + d.tunnelError + '</div>'; }
+        if(d.lan && d.lan.length){
+          html += '<h3 style="margin-top:18px;">局域网地址（同一 WiFi 时可用）</h3>';
+          d.lan.forEach(function(u){ html += '<div class="url-box">' + u + '</div>'; });
+        }
+        box.innerHTML = html;
+        setTimeout(loadAccess, 3000);
+        return;
+      }
+
+      var html = '';
+
+      // ① cloudflared（稳定首选）
+      if(cf && cf.url){
+        html += '<h3 style="color:#16a34a;">① 稳定扫码（推荐使用，4G/5G 即用）</h3>';
+        if(cf.error){ html += '<div class="note" style="background:#fef3c7;">' + cf.error + '</div>'; }
+        html += '<p class="muted">✅ 用的是 <b>Cloudflare 官方免费隧道</b>，在公司/校园网认证网关下最稳，不会出现"错误的网关 502"。<br>' +
+                '⚠ 每次<b>重启系统</b>地址会变化，<b style="color:#b91c1c;">请不要打印长期贴</b>；要打印固定贴，看下面 ②。</p>';
+        html += '<div class="url-box">' + cf.url + '</div>';
+        html += '<div class="flex" style="align-items:center;gap:16px;margin-top:14px;">' +
+          qrHtml('cf-qr', cf.url, 200) +
+          '<div class="muted" style="font-size:13px;max-width:280px;">' +
+            '📱 手机扫一扫左侧二维码，直接进入录入页；<br>' +
+            '✅ 无需输入 IP 验证、无需下载 APP；<br>' +
+            '✅ 支持摄像头扫码录入设备编码。<br>' +
+          '</div></div>';
+      } else {
+        html += '<h3>① 稳定扫码（推荐）</h3>' +
+          '<div class="note" style="background:#fef3c7;">cloudflared 正在下载或启动中，首次启动需要 30~60 秒；请稍后刷新本页，或先使用下面 ② ③ 的地址。</div>';
+      }
+
+      // ② localtunnel primary 固定
+      if(p && p.url){
+        html += '<h3 style="margin-top:28px;">② 固定公网二维码（打印贴现场用）</h3>';
+        if(p.error){ html += '<div class="note" style="background:#fef3c7;border-color:#f59e0b;">' + p.error + '</div>'; }
+        html += '<p class="muted">此二维码地址<b>固定不变</b>（子域名：' + (p.subdomain||'') + '），<b>可以打印贴现场长期使用</b>。<br>' +
+                '<b style="color:#b91c1c;">⚠ 在公司/校园网 511 网关环境下此通道可能偶尔出现 502 错误的网关</b>，出现时请改用 ① 或 ③。<br>' +
+                '<b style="color:#b45309;">电脑需要保持开机运行。</b></p>';
+        html += '<div class="url-box">' + p.url + '</div>';
+        html += '<div class="flex" style="align-items:center;gap:16px;margin-top:14px;">' +
+          qrHtml('p-qr', p.url, 200) +
+          '<div class="muted" style="font-size:13px;max-width:280px;">' +
+            '🖨 可截图或打印此二维码贴现场设备旁；<br>' +
+            '🔁 每次系统重启后地址不变；<br>' +
+            '❓ 打开时如提示"请输入 IP 验证"：照抄页面上提示的主机 IP 填入即可（仅首次）。<br>' +
+            '🚫 如果出现"错误的网关 502"：改用上面 ①，或等 30 秒再刷新。' +
+          '</div></div>';
+      }
+
+      // ③ 备用
+      if(s && s.url){
+        html += '<h3 style="margin-top:28px;">③ 备用公网二维码（①② 都打不开时用）</h3>';
+        if(s.error){ html += '<div class="note" style="background:#fef3c7;">' + s.error + '</div>'; }
+        html += '<p class="muted">每次系统重启都会变化，<b style="color:#b91c1c;">不要打印长期贴</b>，只用来应急。</p>';
+        html += '<div class="url-box">' + s.url + '</div>';
+        html += '<div class="flex" style="align-items:center;gap:16px;margin-top:14px;">' +
+          qrHtml('s-qr', s.url, 180) +
+          '<div class="muted" style="font-size:13px;max-width:280px;">扫一扫备用二维码；若正常，就始终用 ① / ②。</div></div>';
+      }
+
+      // 局域网地址
+      if(d.lan && d.lan.length){
+        html += '<h3 style="margin-top:28px;">④ 局域网地址（同一 WiFi 时备用）</h3>' +
+          '<p class="muted">手机与电脑连接同一 WiFi 时直接打开；http 地址不支持摄像头扫码，只能手动输入。</p>';
+        d.lan.forEach(function(u){ html += '<div class="url-box">' + u + '</div>'; });
+      }
+
+      box.innerHTML = html;
+    });
+  }
+
+  // ---------- 事件 ----------
+  $('btn-refresh').addEventListener('click', refreshAll);
+  ['d-from','d-to','d-device'].forEach(function(id){ $(id).addEventListener('change', loadDashboard); });
+  $('btn-clear-filter').addEventListener('click', function(){
+    $('d-from').value=''; $('d-to').value=''; $('d-device').value=''; loadDashboard();
+  });
+  ['r-device','r-from','r-to'].forEach(function(id){ $(id).addEventListener('change', loadRecords); });
+
+  $('btn-export').addEventListener('click', function(){
+    var q = [];
+    var dev = $('r-device').value, from = $('r-from').value, to = $('r-to').value;
+    if(dev) q.push('deviceId='+encodeURIComponent(dev));
+    if(from) q.push('from='+from); if(to) q.push('to='+to);
+    window.location.href = '/api/export' + (q.length?'?'+q.join('&'):'');
+  });
+
+  $('btn-save-device').addEventListener('click', function(){
+    var id = $('dev-id').value.trim();
+    if(!id){ alert('请填写设备编码'); return; }
+    api('/api/devices', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      id: id, name: $('dev-name').value.trim(), line: $('dev-line').value.trim()
+    })}).then(function(r){
+      if(!r.ok){ alert(r.error||'保存失败'); return; }
+      $('dev-id').value=''; $('dev-name').value=''; $('dev-line').value='';
+      loadDevices(); fillDeviceSelects();
+    });
+  });
+  $('btn-reset-device').addEventListener('click', function(){ $('dev-id').value=''; $('dev-name').value=''; $('dev-line').value=''; });
+  $('btn-label-close').addEventListener('click', function(){ $('label-modal').classList.remove('show'); });
+  $('label-modal').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('show'); });
+  $('btn-label-print').addEventListener('click', function(){ if(currentDevice) printLabel(currentDevice); });
+
+  function refreshAll(){
+    var tab = document.querySelector('.nav button.active').dataset.tab;
+    fillDeviceSelects().then(function(){
+      if(tab==='dashboard') loadDashboard();
+      if(tab==='records') loadRecords();
+      if(tab==='devices') loadDevices();
+      if(tab==='mobile') loadAccess();
+    });
+  }
+
+  // 初始加载
+  refreshAll();
+})();
+</script>
+</body>
+</html>
