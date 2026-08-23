@@ -329,6 +329,12 @@ function serveStatic(res, pathname) {
 async function handleRequest(req, res) {
   try {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    if (url.pathname === '/healthz' || url.pathname === '/health') {
+      let dbOk = 'pending';
+      try { dbOk = (await db.ping()) ? 'ok' : 'error'; } catch (e) { dbOk = 'error:' + e.message; }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      return res.end(JSON.stringify({ ok: true, mode: db.isCloud ? 'cloud' : 'local', uptime: process.uptime(), db: dbOk }));
+    }
     if (url.pathname.startsWith('/api/')) {
       if (req.method === 'OPTIONS') {
         res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' });
