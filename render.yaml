@@ -1,0 +1,34 @@
+# Render Blueprint - 一键部署"内外径检测数据录入系统"
+# 用法：Render Dashboard → Blueprints → "New Blueprint Instance"
+#   1) Source: 选 yuwenhua0917/data-entry-system 仓库
+#   2) Branch: main
+#   3) 等待自动创建 PostgreSQL 数据库 + Web Service 并部署
+# 部署完成后：永久地址 = https://<web服务名>.onrender.com
+#   手机扫码录入页 = https://<web服务名>.onrender.com/mobile
+
+databases:
+  - name: data-entry-db
+    plan: free
+    region: singapore
+    databaseName: dataentry
+    user: dataentry
+
+services:
+  - name: data-entry
+    type: web
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    numInstances: 1
+    autoDeploy: yes
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: data-entry-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
