@@ -152,9 +152,21 @@ async function deleteRecord(id) {
   await writeJson(RECORDS_FILE, records);
 }
 
+async function ping() {
+  if (!isCloud) return true;
+  try {
+    const { rows } = await pool.query('SELECT 1 AS ok');
+    return rows && rows.length && rows[0].ok === 1;
+  } catch (e) {
+    console.warn('[db] ping failed:', e.message);
+    return false;
+  }
+}
+
 module.exports = {
   isCloud,
   initDb,
+  ping,
   getDevices,
   saveDevice,
   deleteDevice,
